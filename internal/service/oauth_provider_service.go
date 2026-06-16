@@ -152,7 +152,7 @@ func (s *OAuthProviderService) ValidateScopes(scopes []string) error {
 }
 
 // GenerateAuthorizationCode creates an authorization code
-func (s *OAuthProviderService) GenerateAuthorizationCode(clientID, userID, redirectURI string, scopes []string, codeChallenge, codeChallengeMethod string) (string, error) {
+func (s *OAuthProviderService) GenerateAuthorizationCode(clientID, userID, redirectURI string, scopes []string, codeChallenge, codeChallengeMethod *string) (string, error) {
 	code, err := generateRandomString(32)
 	if err != nil {
 		return "", err
@@ -196,11 +196,15 @@ func (s *OAuthProviderService) ExchangeCodeForToken(code, clientID, redirectURI,
 	}
 
         // PKCE
-        if authCode.CodeChallenge != "" {
+        if authCode.CodeChallenge != nil && *authCode.CodeChallenge != "" {
 		if codeVerifier == "" {
 			return nil, errors.New("code_verifier required for this authorization code")
 		}
-		if err := utils.VerifyPKCE(codeVerifier, authCode.CodeChallenge, authCode.CodeChallengeMethod); err != nil {
+		method := "S256"
+		if authCode.CodeChallengeMethod != nil && *authCode.CodeChallengeMethod != "" {
+			method = *authCode.CodeChallengeMethod
+		}
+		if err := utils.VerifyPKCE(codeVerifier, *authCode.CodeChallenge, method); err != nil {
 			return nil, err
 		}
 	}
